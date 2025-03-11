@@ -107,7 +107,6 @@ BikeIndex
 
 # More score manipulation:
 BikeIndex
-  .coord_similarity(false) # disable coord similarity (no score normalization)
   .boost(0.0) { must(brand: ['Trek', 'Cannondale']) } # no score
   .boost(fixed: 1.0) { should(year: 2015) } # fixed score
   .boost(fixed: 2.0) { should(year: 2016) }
