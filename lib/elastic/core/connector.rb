@@ -57,7 +57,8 @@ module Elastic::Core
         { 'index' => _document.merge('_index' => write_index) }
       end
 
-      api.bulk(body: operations)
+      response = api.bulk(body: operations)
+      raise_bulk_errors(response) if response['errors']
     end
 
     def bulk_index(_documents)
@@ -68,7 +69,8 @@ module Elastic::Core
 
       write_indices.each do |write_index|
         retry_on_temporary_error('bulk indexing') do
-          api.bulk(index: write_index, body: body)
+          response = api.bulk(index: write_index, body: body)
+          raise_bulk_errors(response) if response['errors']
         end
       end
     end
@@ -279,6 +281,15 @@ module Elastic::Core
 
     def default_batch_size
       1_000
+    end
+
+    def raise_bulk_errors(_response)
+      failed = _response['items'].select { |item| item.dig('index', 'error') }
+      messages = failed.map do |item|
+        err = item['index']['error']
+        "id=#{item.dig('index', '_id')} #{err['type']}: #{err['reason']}"
+      end
+      raise Elastic::BulkIndexError, "#{failed.size} document(s) failed to index:\n#{messages.join("\n")}"
     end
 
     def retry_on_temporary_error(_action, retries: 3)

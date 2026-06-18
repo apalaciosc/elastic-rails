@@ -7,4 +7,7 @@ module Elastic
 
   class RolloverError < Error
   end
+
+  class BulkIndexError < Error
+  end
 end
